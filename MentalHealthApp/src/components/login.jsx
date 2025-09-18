@@ -1,11 +1,36 @@
 import React from "react";
-import { useNavigate } from "react-router-dom";
+import {  useNavigate } from "react-router-dom";
+import {useState} from  "react";
 
 const LoginPage = () => {
   const navigate = useNavigate();
 
+   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+
   const handleLogin = () => {
-    navigate("/home"); // 🔹 Directly go to Home page
+    // ✅ Basic validation
+    if (!email || !password) {
+      setError("Please enter both email and password.");
+     
+      return;
+    }
+
+    // 🔹 (Optional) You can add regex validation for email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      
+      setError("Please enter a valid email address.");
+
+      return;
+      
+
+    }
+
+    // 🔹 If validation passes → navigate
+    setError("");
+    navigate("/home");
   };
 
   return (
@@ -19,6 +44,9 @@ const LoginPage = () => {
         <p className="text-center text-gray-500 mb-8">
           Please login to continue
         </p>
+        {error && (
+          <p className="text-red-500 text-sm text-center mb-4">{error}</p>
+        )}
 
         {/* Email */}
         <div className="mb-6">
@@ -28,6 +56,7 @@ const LoginPage = () => {
           <input
             type="email"
             placeholder="student@example.com"
+            onChange={(e) => setEmail(e.target.value)}
             className="block w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 focus:outline-none"
           />
         </div>
@@ -40,6 +69,7 @@ const LoginPage = () => {
           <input
             type="password"
             placeholder="••••••••"
+            onChange={(e) => setPassword(e.target.value)}  
             className="block w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 focus:outline-none"
           />
         </div>
@@ -48,6 +78,7 @@ const LoginPage = () => {
         <button
           onClick={handleLogin}
           className="w-fit px-3 py-3 bg-indigo-600 text-black rounded-xl font-semibold hover:bg-indigo-700 transition-all duration-200 border border-red-200 " 
+          
         >
           Login
         </button>

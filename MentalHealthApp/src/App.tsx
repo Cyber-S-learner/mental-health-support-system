@@ -8,6 +8,7 @@ import { Community } from './pages/Community';
 import { Doctors } from './pages/Doctors';
 import LoginPage from './components/login';
 import SignupPage from './components/signup';
+import UserDashboard from './components/userdashboard';
 
 export default function App() {
   return (
@@ -24,6 +25,7 @@ export default function App() {
             <Route path="/chatbot" element={<Chatbot />} />
             <Route path="/community" element={<Community />} />
             <Route path="/doctors" element={<Doctors />} />
+            <Route path='/userdashboard' element={<UserDashboard/>}/>
           </Routes>
         </main>
       </div>
