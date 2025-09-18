@@ -2,7 +2,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { Home, MessageCircle, Bot, Users, Stethoscope } from 'lucide-react';
 
 const navItems = [
-  { path: '/', icon: Home, label: 'Home' },
+  { path: '/Home', icon: Home, label: 'Home' },
   { path: '/rooms', icon: MessageCircle, label: 'Rooms' },
   { path: '/chatbot', icon: Bot, label: 'Chatbot' },
   { path: '/community', icon: Users, label: 'Community' },
@@ -17,7 +17,7 @@ export function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           <div className="flex items-center">
-            <Link to="/" className="flex items-center space-x-2">
+            <Link to="/Home" className="flex items-center space-x-2">
               <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
                 <MessageCircle className="w-5 h-5 text-primary-foreground" />
               </div>

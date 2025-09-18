@@ -6,6 +6,8 @@ import { RoomDetail } from './pages/RoomDetail';
 import { Chatbot } from './pages/Chatbot';
 import { Community } from './pages/Community';
 import { Doctors } from './pages/Doctors';
+import LoginPage from './components/login';
+import SignupPage from './components/signup';
 
 export default function App() {
   return (
@@ -14,7 +16,9 @@ export default function App() {
         <Navbar />
         <main>
           <Routes>
-            <Route path="/" element={<Dashboard />} />
+            <Route path='/' element={<LoginPage/>}/>
+            <Route path='/signup' element={<SignupPage/> }/>
+            <Route path="/Home" element={<Dashboard />} />
             <Route path="/rooms" element={<Rooms />} />
             <Route path="/rooms/:roomId" element={<RoomDetail />} />
             <Route path="/chatbot" element={<Chatbot />} />
