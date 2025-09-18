@@ -7,22 +7,37 @@ import { Badge } from '../components/ui/badge';
 import { Checkbox } from '../components/ui/checkbox';
 import { ArrowLeft, Calendar, CheckCircle, Circle, Lock } from 'lucide-react';
 import { mentalHealthRooms } from '../data/mockData';
-import { getRoomProgress, markModuleComplete, isModuleComplete } from '../utils/progressUtils';
+import { getRoomProgress, markModuleComplete, isModuleComplete, resetRoomProgress } from '../utils/progressUtils';
 
 export function RoomDetail() {
   const { roomId } = useParams<{ roomId: string }>();
   const [selectedModule, setSelectedModule] = useState<number | null>(null);
+
+  // per-module boolean: true = module completed
   const [moduleProgress, setModuleProgress] = useState<{ [key: number]: boolean }>({});
-  
+
+  // per-module per-activity checks (controlled checkboxes)
+  const [activityChecks, setActivityChecks] = useState<{ [key: number]: boolean[] }>({});
+
   const room = mentalHealthRooms.find(r => r.id === roomId);
-  
+
+  // initialize moduleProgress & activityChecks from storage / room definition
   useEffect(() => {
     if (room && roomId) {
-      const progress: { [key: number]: boolean } = {};
-      room.modules.forEach(module => {
-        progress[module.id] = isModuleComplete(roomId, module.id);
+      const progressInit: { [key: number]: boolean } = {};
+      const activitiesInit: { [key: number]: boolean[] } = {};
+
+      room.modules.forEach((module) => {
+        progressInit[module.id] = isModuleComplete(roomId, module.id);
+        activitiesInit[module.id] = module.activities ? new Array(module.activities.length).fill(false) : [];
+        // if module is complete, mark all its activities checked in UI
+        if (progressInit[module.id]) {
+          activitiesInit[module.id] = new Array(module.activities.length).fill(true);
+        }
       });
-      setModuleProgress(progress);
+
+      setModuleProgress(progressInit);
+      setActivityChecks(activitiesInit);
     }
   }, [room, roomId]);
 
@@ -39,34 +54,99 @@ export function RoomDetail() {
     );
   }
 
+  // compute overall progress reading from storage (so it stays consistent)
   const progress = getRoomProgress(room.id, room.modules.length);
   const completedModules = Object.values(moduleProgress).filter(Boolean).length;
 
+  // MARK A MODULE COMPLETE: update storage + local state + mark all activities checked
   const handleModuleComplete = (moduleId: number) => {
-    if (roomId) {
-      markModuleComplete(roomId, moduleId);
-      setModuleProgress(prev => ({ ...prev, [moduleId]: true }));
-    }
+    if (!roomId) return;
+
+    // 1) update persistent store
+    markModuleComplete(roomId, moduleId);
+
+    // 2) update UI state
+    setModuleProgress(prev => ({ ...prev, [moduleId]: true }));
+
+    // 3) set activities for that module as checked
+    setActivityChecks(prev => {
+      const copy = { ...prev };
+      const moduleDef = room.modules.find(m => m.id === moduleId);
+      if (moduleDef) {
+        copy[moduleId] = new Array(moduleDef.activities.length).fill(true);
+      } else {
+        copy[moduleId] = [];
+      }
+      return copy;
+    });
   };
 
+  // RESET / RESTART handler
+  const handleRestart = () => {
+    if (!roomId) return;
+    const confirmed = window.confirm('Restart will clear all progress for this room. Are you sure?');
+    if (!confirmed) return;
+
+    // 1) clear persistent storage
+    resetRoomProgress(roomId);
+
+    // 2) reset local states
+    const resetProg: { [key: number]: boolean } = {};
+    const resetActs: { [key: number]: boolean[] } = {};
+    room.modules.forEach((m) => {
+      resetProg[m.id] = false;
+      resetActs[m.id] = new Array(m.activities.length).fill(false);
+    });
+
+    setModuleProgress(resetProg);
+    setActivityChecks(resetActs);
+
+    // 3) deselect selected module and trigger re-render (progress reads from storage on render)
+    setSelectedModule(null);
+  };
+
+  // helper to decide module status
   const getModuleStatus = (moduleIndex: number, moduleId: number) => {
     if (moduleProgress[moduleId]) return 'completed';
     if (moduleIndex === 0) return 'available';
     
-    // Module is available if previous module is completed
     const prevModuleId = room.modules[moduleIndex - 1].id;
     return moduleProgress[prevModuleId] ? 'available' : 'locked';
+  };
+
+  // toggle individual activity checkbox (does NOT mark module complete automatically)
+  const toggleActivity = (moduleId: number, activityIndex: number) => {
+    setActivityChecks(prev => {
+      const copy = { ...prev };
+      const arr = copy[moduleId] ? [...copy[moduleId]] : [];
+      arr[activityIndex] = !arr[activityIndex];
+      copy[moduleId] = arr;
+      return copy;
+    });
   };
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Header */}
       <div className="mb-8">
-        <Link to="/rooms" className="inline-flex items-center text-muted-foreground hover:text-foreground mb-4">
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Back to Rooms
-        </Link>
-        
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <Link to="/rooms" className="inline-flex items-center text-muted-foreground hover:text-foreground">
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back to Rooms
+            </Link>
+          </div>
+
+          {/* Restart button — visible when some progress exists */}
+          <div>
+            {completedModules > 0 ? (
+              <Button variant="destructive" size="sm" onClick={handleRestart}>
+                Restart Room
+              </Button>
+            ) : null}
+          </div>
+        </div>
+
         <div className="flex items-start space-x-6">
           <div className={`w-20 h-20 rounded-2xl ${room.color} flex items-center justify-center text-white text-3xl`}>
             {room.icon}
@@ -113,9 +193,7 @@ export function RoomDetail() {
                 return (
                   <div
                     key={module.id}
-                    className={`p-3 rounded-lg border cursor-pointer transition-colors ${
-                      isSelected ? 'border-primary bg-primary/5' : 'hover:bg-accent'
-                    } ${status === 'locked' ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    className={`p-3 rounded-lg border cursor-pointer transition-colors ${isSelected ? 'border-primary bg-primary/5' : 'hover:bg-accent'} ${status === 'locked' ? 'opacity-50 cursor-not-allowed' : ''}`}
                     onClick={() => status !== 'locked' && setSelectedModule(module.id)}
                   >
                     <div className="flex items-center space-x-3">
@@ -155,8 +233,9 @@ export function RoomDetail() {
         <div className="lg:col-span-2">
           {selectedModule ? (
             (() => {
-              const module = room.modules.find(m => m.id === selectedModule);
-              const status = getModuleStatus(room.modules.findIndex(m => m.id === selectedModule), selectedModule);
+              const moduleIndex = room.modules.findIndex(m => m.id === selectedModule);
+              const module = room.modules[moduleIndex];
+              const status = getModuleStatus(moduleIndex, selectedModule);
               
               if (!module) return null;
               
@@ -185,15 +264,14 @@ export function RoomDetail() {
                         {module.activities.map((activity, index) => (
                           <div key={index} className="flex items-center space-x-2">
                             <Checkbox 
-                              id={`activity-${index}`}
+                              id={`activity-${module.id}-${index}`}
                               disabled={status === 'completed'}
-                            
-                              defaultChecked={status === 'completed'}
-                              
+                              checked={(activityChecks[module.id] && activityChecks[module.id][index]) || false}
+                              onCheckedChange={() => toggleActivity(module.id, index)}
                             />
                             <label 
-                              htmlFor={`activity-${index}`}
-                              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                              htmlFor={`activity-${module.id}-${index}`}
+                              className="text-sm font-medium leading-none"
                             >
                               {activity}
                             </label>

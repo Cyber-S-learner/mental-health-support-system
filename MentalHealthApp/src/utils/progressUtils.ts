@@ -1,39 +1,32 @@
-export const PROGRESS_STORAGE_KEY = 'mental-health-progress';
+// Utility to manage room/module progress in localStorage
 
-export interface UserProgress {
-  [roomId: string]: {
-    [moduleId: number]: boolean;
-  };
-}
-
-export const getProgress = (): UserProgress => {
-  if (typeof window === 'undefined') return {};
-  const stored = localStorage.getItem(PROGRESS_STORAGE_KEY);
-  return stored ? JSON.parse(stored) : {};
-};
-
-export const saveProgress = (progress: UserProgress): void => {
-  if (typeof window === 'undefined') return;
-  localStorage.setItem(PROGRESS_STORAGE_KEY, JSON.stringify(progress));
-};
-
-export const markModuleComplete = (roomId: string, moduleId: number): void => {
-  const progress = getProgress();
-  if (!progress[roomId]) {
-    progress[roomId] = {};
+// ✅ Mark a module as complete
+export const markModuleComplete = (roomId: string, moduleId: number) => {
+  const key = `progress_${roomId}`;
+  const existing = JSON.parse(localStorage.getItem(key) || "[]");
+  if (!existing.includes(moduleId)) {
+    existing.push(moduleId);
+    localStorage.setItem(key, JSON.stringify(existing));
   }
-  progress[roomId][moduleId] = true;
-  saveProgress(progress);
 };
 
+// ✅ Check if a module is complete
 export const isModuleComplete = (roomId: string, moduleId: number): boolean => {
-  const progress = getProgress();
-  return progress[roomId]?.[moduleId] || false;
+  const key = `progress_${roomId}`;
+  const existing = JSON.parse(localStorage.getItem(key) || "[]");
+  return existing.includes(moduleId);
 };
 
+// ✅ Get overall room progress in percentage
 export const getRoomProgress = (roomId: string, totalModules: number): number => {
-  const progress = getProgress();
-  const roomProgress = progress[roomId] || {};
-  const completedCount = Object.values(roomProgress).filter(Boolean).length;
-  return Math.round((completedCount / totalModules) * 100);
+  const key = `progress_${roomId}`;
+  const existing = JSON.parse(localStorage.getItem(key) || "[]");
+  if (totalModules === 0) return 0;
+  return Math.round((existing.length / totalModules) * 100);
+};
+
+// ✅ Reset all progress for a room
+export const resetRoomProgress = (roomId: string) => {
+  const key = `progress_${roomId}`;
+  localStorage.removeItem(key);
 };
