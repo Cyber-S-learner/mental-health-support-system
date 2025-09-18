@@ -5,7 +5,7 @@ import { Progress } from '../components/ui/progress';
 import { MessageCircle, Bot, Users, Stethoscope, TrendingUp } from 'lucide-react';
 import { mentalHealthRooms } from '../data/mockData';
 import { getRoomProgress } from '../utils/progressUtils';
-import UserDashboard from '../components/userdashboard';
+
 
 export function Dashboard() {
   const quickStats = [
@@ -111,6 +111,7 @@ export function Dashboard() {
             </CardContent>
           </Card>
         </Link>
+        
       </div>
 
       {/* Current Progress */}

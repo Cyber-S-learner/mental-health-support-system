@@ -9,8 +9,23 @@ import { Doctors } from './pages/Doctors';
 import LoginPage from './components/login';
 import SignupPage from './components/signup';
 import UserDashboard from './components/userdashboard';
+import {useState} from "react";
 
 export default function App() {
+
+  const [userProgress] = useState<{ [key: string]: number }>({
+    depression: 25,
+    anxiety: 60,
+    stress: 10,
+    sleep: 0,
+  });
+
+  const [completedModules] = useState<{ [key: string]: number[] }>({
+    depression: [1, 2, 3],
+    anxiety: [1, 2, 3, 4, 5, 6, 7, 8],
+    stress: [1],
+    sleep: [],
+  });
   return (
     <Router>
       <div className="min-h-screen bg-background">
@@ -25,7 +40,16 @@ export default function App() {
             <Route path="/chatbot" element={<Chatbot />} />
             <Route path="/community" element={<Community />} />
             <Route path="/doctors" element={<Doctors />} />
-            <Route path='/userdashboard' element={<UserDashboard/>}/>
+            
+             <Route
+              path="/userdashboard"
+              element={
+                <UserDashboard
+                  userProgress={userProgress}
+                  completedModules={completedModules}
+                />
+              }
+            />
           </Routes>
         </main>
       </div>
